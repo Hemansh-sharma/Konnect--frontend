@@ -8,6 +8,8 @@ import Feed from "./components/Feed";
 import Connections from "./components/Connections";
 import Requests from "./components/Requests";
 import Chat from "./components/Chat";
+import CreateGroupChat from "./components/CreateGroupChat";
+import GroupChat from "./components/GroupChat";
 
 function App() {
   return (
@@ -23,6 +25,8 @@ function App() {
               <Route path="/requests" element={<Requests />} />
               
               <Route path="/chat/:targetUserId" element={<Chat />} />
+              <Route path="/create-group-chat" element={<CreateGroupChat />} />
+              <Route path="/group-chat/:groupChatId" element={<GroupChat />} />
             </Route>
           </Routes>
         </BrowserRouter>

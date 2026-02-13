@@ -19,7 +19,7 @@ const UserCard = ({ user }) => {
   };
 
   return (
-    <div className="card bg-base-300 w-96 shadow-xl">
+    <div className="card bg-white w-96 shadow-xl border-2 border-purple-300 hover:shadow-2xl hover:border-pink-300 transition-all">
       <figure>
         <img src={user.photoUrl} alt="photo" />
       </figure>
@@ -27,15 +27,15 @@ const UserCard = ({ user }) => {
         <h2 className="card-title">{firstName + " " + lastName}</h2>
         {age && gender && <p>{age + ", " + gender}</p>}
         <p>{about}</p>
-        <div className="card-actions justify-center my-4">
+        <div className="card-actions justify-center my-4 gap-2">
           <button
-            className="btn btn-primary"
+            className="btn bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white border-none"
             onClick={() => handleSendRequest("ignored", _id)}
           >
             Ignore
           </button>
           <button
-            className="btn btn-secondary"
+            className="btn bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-none"
             onClick={() => handleSendRequest("interested", _id)}
           >
             Interested

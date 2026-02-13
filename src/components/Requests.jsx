@@ -2,6 +2,7 @@ import axios from "axios";
 import { BASE_URL } from "../utils/constants";
 import { useDispatch, useSelector } from "react-redux";
 import { addRequests, removeRequest } from "../utils/requestSlice";
+import { clearNewRequests } from "../utils/notificationSlice";
 import { useEffect, useState } from "react";
 
 const Requests = () => {
@@ -31,6 +32,7 @@ const Requests = () => {
 
   useEffect(() => {
     fetchRequests();
+    dispatch(clearNewRequests());
   }, []);
 
   if (!requests) return;
@@ -40,7 +42,7 @@ const Requests = () => {
 
   return (
     <div className="text-center my-10">
-      <h1 className="text-bold text-white text-3xl">Connection Requests</h1>
+      <h1 className="text-bold text-3xl bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Connection Requests</h1>
 
       {requests.map((request) => {
         const { _id, firstName, lastName, photoUrl, age, gender, about } =
@@ -49,7 +51,7 @@ const Requests = () => {
         return (
           <div
             key={_id}
-            className=" flex justify-between items-center m-4 p-4 rounded-lg bg-base-300  mx-auto"
+            className="flex justify-between items-center m-4 p-4 rounded-lg bg-white border-2 border-purple-200 w-1/2 mx-auto hover:shadow-lg hover:border-pink-300 transition-all"
           >
             <div>
               <img
@@ -62,18 +64,18 @@ const Requests = () => {
               <h2 className="font-bold text-xl">
                 {firstName + " " + lastName}
               </h2>
-              {age && gender && <p>{age + ", " + gender}</p>}
-              <p>{about}</p>
+              {age && gender && <p className="text-gray-600">{age + ", " + gender}</p>}
+              <p className="text-gray-600">{about}</p>
             </div>
             <div>
               <button
-                className="btn btn-primary mx-2"
+                className="btn bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600 text-white border-none mx-2"
                 onClick={() => reviewRequest("rejected", request._id)}
               >
                 Reject
               </button>
               <button
-                className="btn btn-secondary mx-2"
+                className="btn bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white border-none mx-2"
                 onClick={() => reviewRequest("accepted", request._id)}
               >
                 Accept

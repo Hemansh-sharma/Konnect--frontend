@@ -1,17 +1,22 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { createSocketConnection } from "../utils/socket";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import { BASE_URL } from "../utils/constants";
+import GroupMembers from "./GroupMembers";
 
-const Chat = () => {
-  const { targetUserId } = useParams();
+const GroupChat = () => {
+  const { groupChatId } = useParams();
+  const navigate = useNavigate();
+  const [groupChat, setGroupChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [showMembers, setShowMembers] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const user = useSelector((store) => store.user);
@@ -38,51 +43,60 @@ const Chat = () => {
     });
   };
 
-  const fetchChatMessages = async () => {
-    const chat = await axios.get(BASE_URL + "/chat/" + targetUserId, {
-      withCredentials: true,
-    });
+  const fetchGroupChat = async () => {
+    try {
+      const response = await axios.get(BASE_URL + `/group-chat/${groupChatId}`, {
+        withCredentials: true,
+      });
+      setGroupChat(response.data);
 
-    console.log(chat.data.messages);
-
-    const chatMessages = chat?.data?.messages.map((msg) => {
-      const { senderId, text, imageUrl, createdAt } = msg;
-      return {
-        firstName: senderId?.firstName,
-        lastName: senderId?.lastName,
-        text,
-        imageUrl,
-        timestamp: createdAt,
-      };
-    });
-    setMessages(chatMessages);
+      // Map messages
+      const chatMessages = response.data.messages.map((msg) => {
+        const { senderId, text, imageUrl, createdAt } = msg;
+        return {
+          firstName: senderId?.firstName,
+          lastName: senderId?.lastName,
+          senderId: senderId?._id,
+          text,
+          imageUrl,
+          timestamp: createdAt,
+        };
+      });
+      setMessages(chatMessages);
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
   };
-  
-  useEffect(() => {
-    fetchChatMessages();
-  }, []);
 
   useEffect(() => {
-    if (!userId) {
+    fetchGroupChat();
+  }, [groupChatId]);
+
+  useEffect(() => {
+    if (!userId || !groupChatId) {
       return;
     }
     const socket = createSocketConnection();
-    // As soon as the page loaded, the socket connection is made and joinChat event is emitted
-    socket.emit("joinChat", {
+    socket.emit("joinGroupChat", {
+      groupChatId,
       firstName: user.firstName,
       userId,
-      targetUserId,
     });
 
-    socket.on("messageReceived", ({ firstName, lastName, text, imageUrl }) => {
-      console.log(firstName + " :  " + (text || "sent an image"));
-      setMessages((messages) => [...messages, { firstName, lastName, text, imageUrl, timestamp: new Date().toISOString() }]);
+    socket.on("groupMessageReceived", ({ firstName, lastName, text, imageUrl, senderId }) => {
+      console.log(firstName + " : " + (text || "sent an image"));
+      setMessages((messages) => [
+        ...messages,
+        { firstName, lastName, senderId, text, imageUrl, timestamp: new Date().toISOString() },
+      ]);
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [userId, targetUserId]);
+  }, [userId, groupChatId]);
 
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
@@ -121,7 +135,7 @@ const Chat = () => {
 
   const sendMessage = async () => {
     const socket = createSocketConnection();
-    
+
     let imageUrl = null;
     if (selectedImage) {
       imageUrl = await uploadImage();
@@ -135,15 +149,15 @@ const Chat = () => {
       return; // Don't send empty messages
     }
 
-    socket.emit("sendMessage", {
+    socket.emit("sendGroupMessage", {
+      groupChatId,
       firstName: user.firstName,
       lastName: user.lastName,
       userId,
-      targetUserId,
       text: newMessage,
       imageUrl,
     });
-    
+
     setNewMessage("");
     setSelectedImage(null);
     setImagePreview(null);
@@ -160,29 +174,76 @@ const Chat = () => {
     }
   };
 
+  if (loading) {
+    return <div className="text-white text-center mt-10">Loading chat...</div>;
+  }
+
+  if (!groupChat) {
+    return (
+      <div className="text-center my-10">
+        <h1 className="text-white text-3xl font-bold mb-5">Group Chat Not Found</h1>
+        <button
+          onClick={() => navigate("/connections")}
+          className="btn bg-purple-500 text-white border-none"
+        >
+          Back to Connections
+        </button>
+      </div>
+    );
+  }
+
+  const handleIconUpdate = (newIconUrl) => {
+    setGroupChat((prev) => ({
+      ...prev,
+      groupIcon: newIconUrl,
+    }));
+  };
+
+  const handleGroupUpdate = (updatedChat) => {
+    setGroupChat(updatedChat);
+  };
+
   return (
     <div className="w-3/4 mx-auto border-2 border-purple-300 m-5 h-[70vh] flex flex-col rounded-lg shadow-xl bg-white">
-      <h1 className="p-5 border-b-2 border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-t-lg font-bold">Chat</h1>
+      {/* Header with clickable group info */}
+      <div 
+        onClick={() => setShowMembers(true)}
+        className="p-5 border-b-2 border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-t-lg cursor-pointer hover:shadow-lg transition-all flex items-center gap-4"
+      >
+        <img
+          src={BASE_URL + groupChat.groupIcon}
+          alt="Group Icon"
+          className="w-12 h-12 rounded-full object-cover"
+          onError={(e) => {
+            e.target.src = "https://via.placeholder.com/48?text=Group";
+          }}
+        />
+        <div>
+          <h1 className="font-bold text-xl">{groupChat.groupName}</h1>
+          <p className="text-sm text-purple-100">
+            {groupChat.participants.length} members
+          </p>
+        </div>
+        <span className="ml-auto text-sm text-purple-100">Click to view members</span>
+      </div>
+
       <div className="flex-1 overflow-scroll p-5 bg-gray-50">
         {messages.map((msg, index) => {
+          const isCurrentUser = user.firstName === msg.firstName;
           return (
-            <div
-              key={index}
-              className={
-                "chat " +
-                (user.firstName === msg.firstName ? "chat-end" : "chat-start")
-              }
-            >
+            <div key={index} className={"chat " + (isCurrentUser ? "chat-end" : "chat-start")}>
               <div className="chat-header font-bold text-gray-800">
                 {`${msg.firstName}  ${msg.lastName}`}
-                <time className="text-xs font-semibold text-gray-600">{formatTime(msg.timestamp)}</time>
+                <time className="text-xs font-semibold text-gray-600">
+                  {formatTime(msg.timestamp)}
+                </time>
               </div>
               {msg.text && <div className="chat-bubble">{msg.text}</div>}
               {msg.imageUrl && (
                 <div className="chat-bubble">
-                  <img 
-                    src={BASE_URL + msg.imageUrl} 
-                    alt="chat" 
+                  <img
+                    src={BASE_URL + msg.imageUrl}
+                    alt="chat"
                     className="max-w-xs h-auto rounded-lg"
                   />
                 </div>
@@ -193,14 +254,11 @@ const Chat = () => {
         })}
         <div ref={messagesEndRef} />
       </div>
+
       <div className="p-5 border-t-2 border-purple-300 bg-white rounded-b-lg">
         {imagePreview && (
           <div className="mb-4 relative">
-            <img 
-              src={imagePreview} 
-              alt="preview" 
-              className="max-h-32 max-w-xs rounded-lg"
-            />
+            <img src={imagePreview} alt="preview" className="max-h-32 max-w-xs rounded-lg" />
             <button
               onClick={clearImagePreview}
               className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
@@ -230,8 +288,8 @@ const Chat = () => {
           >
             📷
           </button>
-          <button 
-            onClick={sendMessage} 
+          <button
+            onClick={sendMessage}
             disabled={uploading}
             className="btn bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-none disabled:opacity-50"
           >
@@ -239,7 +297,16 @@ const Chat = () => {
           </button>
         </div>
       </div>
+
+      <GroupMembers 
+        groupChat={groupChat}
+        isOpen={showMembers}
+        onClose={() => setShowMembers(false)}
+        onIconUpdate={handleIconUpdate}
+        onGroupUpdate={handleGroupUpdate}
+      />
     </div>
   );
 };
-export default Chat;
+
+export default GroupChat;

@@ -46,13 +46,13 @@ const EditProfile = ({ user }) => {
     <>
       <div className="flex justify-center my-10">
         <div className="flex justify-center mx-10">
-          <div className="card bg-base-300 w-96 shadow-xl">
+          <div className="card bg-white w-96 shadow-xl border-2 border-purple-300">
             <div className="card-body">
-              <h2 className="card-title justify-center">Edit Profile</h2>
+              <h2 className="card-title justify-center font-extrabold text-xl text-purple-900">Edit Profile</h2>
               <div>
                 <label className="form-control w-full max-w-xs my-2">
                   <div className="label">
-                    <span className="label-text">First Name:</span>
+                    <span className="label-text font-bold text-gray-800">First Name:</span>
                   </div>
                   <input
                     type="text"
@@ -62,19 +62,19 @@ const EditProfile = ({ user }) => {
                   />
                 </label>
                 <label className="form-control w-full max-w-xs my-2">
-                  <label className="form-control w-full max-w-xs my-2">
-                    <div className="label">
-                      <span className="label-text">Last Name:</span>
-                    </div>
-                    <input
-                      type="text"
-                      value={lastName}
-                      className="input input-bordered w-full max-w-xs"
-                      onChange={(e) => setLastName(e.target.value)}
-                    />
-                  </label>
                   <div className="label">
-                    <span className="label-text">Photo URL :</span>
+                    <span className="label-text font-bold text-gray-800">Last Name:</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={lastName}
+                    className="input input-bordered w-full max-w-xs"
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                </label>
+                <label className="form-control w-full max-w-xs my-2">
+                  <div className="label">
+                    <span className="label-text font-bold text-gray-800">Photo URL :</span>
                   </div>
                   <input
                     type="text"
@@ -85,7 +85,7 @@ const EditProfile = ({ user }) => {
                 </label>
                 <label className="form-control w-full max-w-xs my-2">
                   <div className="label">
-                    <span className="label-text">Age:</span>
+                    <span className="label-text font-bold text-gray-800">Age:</span>
                   </div>
                   <input
                     type="text"
@@ -96,7 +96,7 @@ const EditProfile = ({ user }) => {
                 </label>
                 <label className="form-control w-full max-w-xs my-2">
                   <div className="label">
-                    <span className="label-text">Gender:</span>
+                    <span className="label-text font-bold text-gray-800">Gender:</span>
                   </div>
                   <input
                     type="text"
@@ -107,7 +107,7 @@ const EditProfile = ({ user }) => {
                 </label>
                 <label className="form-control w-full max-w-xs my-2">
                   <div className="label">
-                    <span className="label-text">About:</span>
+                    <span className="label-text font-bold text-gray-800">About:</span>
                   </div>
                   <input
                     type="text"
@@ -117,9 +117,9 @@ const EditProfile = ({ user }) => {
                   />
                 </label>
               </div>
-              <p className="text-red-500">{error}</p>
+              <p className="text-red-500 font-semibold">{error}</p>
               <div className="card-actions justify-center m-2">
-                <button className="btn btn-primary" onClick={saveProfile}>
+                <button className="btn bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-none" onClick={saveProfile}>
                   Save Profile
                 </button>
               </div>
