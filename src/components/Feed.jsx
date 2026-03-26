@@ -3,27 +3,38 @@ import { BASE_URL } from "../utils/constants";
 import { useDispatch, useSelector } from "react-redux";
 import { addFeed } from "../utils/feedSlice";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { removeUser } from "../utils/userSlice";
 import UserCard from "./UserCard";
 
 const Feed = () => {
   const feed = useSelector((store) => store.feed);
+  const user = useSelector((store) => store.user);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const getFeed = async () => {
     if (feed) return;
+    if (!user?._id) return;
+
     try {
       const res = await axios.get(BASE_URL + "/feed", {
         withCredentials: true,
       });
       dispatch(addFeed(res?.data?.data));
     } catch (err) {
-      //TODO: handle error
+      if (err?.response?.status === 401) {
+        dispatch(removeUser());
+        navigate("/login", { replace: true });
+        return;
+      }
+      console.error("Failed to fetch feed:", err);
     }
   };
 
   useEffect(() => {
     getFeed();
-  }, []);
+  }, [user?._id]);
   if (!feed) return;
 
   if (feed.length <= 0)

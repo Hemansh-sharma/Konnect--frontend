@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createSocketConnection } from "../utils/socket";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import { BASE_URL } from "../utils/constants";
 import GroupMembers from "./GroupMembers";
+import { setActiveCall, setCallStatus } from "../utils/callSlice";
 
 const GroupChat = () => {
   const { groupChatId } = useParams();
@@ -20,7 +21,10 @@ const GroupChat = () => {
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const user = useSelector((store) => store.user);
+  const call = useSelector((store) => store.call);
+  const dispatch = useDispatch();
   const userId = user?._id;
+  const socketRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -79,6 +83,8 @@ const GroupChat = () => {
       return;
     }
     const socket = createSocketConnection();
+    socketRef.current = socket;
+
     socket.emit("joinGroupChat", {
       groupChatId,
       firstName: user.firstName,
@@ -93,10 +99,13 @@ const GroupChat = () => {
       ]);
     });
 
+    // Note: Group call events are now handled globally in Body.jsx
+    // This ensures popup shows even when user is not on the group chat page
+
     return () => {
-      socket.disconnect();
+      socket.off("groupMessageReceived");
     };
-  }, [userId, groupChatId]);
+  }, [userId, groupChatId, dispatch]);
 
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
@@ -203,29 +212,61 @@ const GroupChat = () => {
     setGroupChat(updatedChat);
   };
 
+  const startGroupVideoCall = () => {
+    socketRef.current?.emit("startGroupCall", {
+      groupChatId,
+      initiatorId: userId,
+      initiatorName: `${user.firstName} ${user.lastName}`,
+      callType: "video",
+    });
+    dispatch(
+      setActiveCall({
+        with: groupChat.groupName,
+        groupChatId,
+        type: "video",
+      })
+    );
+    dispatch(setCallStatus("connected"));
+  };
+
   return (
-    <div className="w-3/4 mx-auto border-2 border-purple-300 m-5 h-[70vh] flex flex-col rounded-lg shadow-xl bg-white">
-      {/* Header with clickable group info */}
-      <div 
-        onClick={() => setShowMembers(true)}
-        className="p-5 border-b-2 border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-t-lg cursor-pointer hover:shadow-lg transition-all flex items-center gap-4"
-      >
-        <img
-          src={BASE_URL + groupChat.groupIcon}
-          alt="Group Icon"
-          className="w-12 h-12 rounded-full object-cover"
-          onError={(e) => {
-            e.target.src = "https://via.placeholder.com/48?text=Group";
-          }}
-        />
-        <div>
-          <h1 className="font-bold text-xl">{groupChat.groupName}</h1>
-          <p className="text-sm text-purple-100">
-            {groupChat.participants.length} members
-          </p>
+    <>
+      <div className="w-3/4 mx-auto border-2 border-purple-300 m-5 h-[70vh] flex flex-col rounded-lg shadow-xl bg-white">
+        {/* Header with clickable group info */}
+        <div 
+          onClick={() => setShowMembers(true)}
+          className="p-5 border-b-2 border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-t-lg cursor-pointer hover:shadow-lg transition-all flex items-center gap-4 justify-between"
+        >
+          <div className="flex items-center gap-4">
+            <img
+              src={BASE_URL + groupChat.groupIcon}
+              alt="Group Icon"
+              className="w-12 h-12 rounded-full object-cover"
+              onError={(e) => {
+                e.target.src = "https://via.placeholder.com/48?text=Group";
+              }}
+            />
+            <div>
+              <h1 className="font-bold text-xl">{groupChat.groupName}</h1>
+              <p className="text-sm text-purple-100">
+                {groupChat.participants.length} members
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                startGroupVideoCall();
+              }}
+              className="btn btn-sm bg-green-600 hover:bg-green-700 text-white border-none"
+              title="Start group video call"
+            >
+              📹 Call
+            </button>
+            <span className="text-sm text-purple-100">Click group info to view members</span>
+          </div>
         </div>
-        <span className="ml-auto text-sm text-purple-100">Click to view members</span>
-      </div>
 
       <div className="flex-1 overflow-scroll p-5 bg-gray-50">
         {messages.map((msg, index) => {
@@ -305,7 +346,8 @@ const GroupChat = () => {
         onIconUpdate={handleIconUpdate}
         onGroupUpdate={handleGroupUpdate}
       />
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -5,6 +5,7 @@ import connectionReducer from "./conectionSlice";
 import requestReducer from "./requestSlice";
 import notificationReducer from "./notificationSlice";
 import onlineUsersReducer from "./onlineUsersSlice";
+import callReducer from "./callSlice";
 
 const appStore = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ const appStore = configureStore({
     requests: requestReducer,
     notification: notificationReducer,
     onlineUsers: onlineUsersReducer,
+    call: callReducer,
   },
 });
 
